@@ -40,6 +40,7 @@ class test_pyRXPU(unittest.TestCase):
 				xml = f.read()
 			return parser.parse(xml)
 		finally:
+			del parser
 			os.chdir(retdir)
 			if debug: print('Done parsing   %s' % filename, file=sys.stderr)
 			if debug: print('='*60, file=sys.stderr)
