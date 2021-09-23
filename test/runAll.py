@@ -11,7 +11,7 @@ class Unbuffered(object):
         return getattr(self.stream, attr)
 
 def main():
-    import sys, os, psutil
+    import sys, os, psutil, platform
     sys.__old_stderr__ = sys.stderr
     sys.__stderr__ = sys.stderr = sys.stdout = Unbuffered(sys.stdout)
     wd = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -28,7 +28,8 @@ def main():
 
     leaktest.main(100)
     testRXPbasic.main()
-    test_xmltestsuite.main()
+    if platform.system()!='Darwin':
+        test_xmltestsuite.main()
     print(f'+++++ open Files={psutil.Process().open_files()!r}')
 
 if __name__=='__main__':
