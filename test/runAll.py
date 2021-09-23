@@ -28,8 +28,8 @@ def main():
 
     leaktest.main(100)
     testRXPbasic.main()
-    if platform.system()!='Darwin':
-        test_xmltestsuite.main()
+    if 1 or platform.system()!='Darwin':
+        test_xmltestsuite.main(verbose=os.environ.get('VERBOSE','0')=='1' or platform.system()=='Darwin')
     print(f'+++++ open Files={psutil.Process().open_files()!r}')
 
 if __name__=='__main__':

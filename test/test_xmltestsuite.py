@@ -15,6 +15,7 @@ __author__ = 'Stuart Bishop <stuart@stuartbishop.net>'
 import unittest, zipfile, sys, os, os.path, codecs
 debug = int(os.environ.get('RL_DEBUG','0'))
 import pyRXPU
+verbose=0
 
 # Debug is to help me trace down memory bugs
 if debug: import time
@@ -90,28 +91,29 @@ class test_pyRXPU(unittest.TestCase):
 		with codecs.open(outname,mode='rb',encoding='utf8') as f:
 			outxml = f.read()
 		self.assertEqual(inxml,outxml,'%s != %s' % (inname,outname))
+		if verbose: print(f'##### _test_valid({inname!r}) OK')  
 
 	def _test_invalid_parse(self,inname):
 		try:
 			self.parse(inname,Validate=0)
 		except pyRXPU.error:
-			pass
+			if verbose: print(f'##### _test_invalid_parse({inname!r}) OK')  
 
 	def _test_invalid_validate(self,inname):
 		try:
 			self.parse(inname,Validate=1)
-			self.fail('Failed to detect validity error in %r' % inname)
+			self.fail('!!!!! Failed to detect validity error in %r' % inname)
 		except pyRXPU.error:
-			pass
+			if verbose: print(f'##### _test_invalid_validate({inname!r}) OK')  
 
 	def _test_notwf(self,inname):
 		try:
 			self.parse(inname,Validate=0)
 			self.fail(
-				'Failed to detect that %r was not well formed' % inname
+				'!!!!! Failed to detect that %r was not well formed' % inname
 				)
 		except pyRXPU.error:
-			pass
+			if verbose: print(f'##### _test_notwf({inname!r}) OK')  
 
 def buildup_test(cls=test_pyRXPU,I=[]):
 	''' Add test methods to the TestCase '''
@@ -120,12 +122,16 @@ def buildup_test(cls=test_pyRXPU,I=[]):
 	cls.notwf = []
 	testdir = os.path.dirname(__file__)
 	try:
-		zipf = zipfile.ZipFile(os.path.join(testdir,'xmltest.zip'))
+		zipfName = os.path.join(testdir,'xmltest.zip')
+		zipf = zipfile.ZipFile(zipfName)
 	except:
-		print("Can't locate file xmltest.zip\nPerhaps it should be downloaded from\nhttp://www.reportlab.com/ftp/xmltest.zip\nor\nftp://ftp.jclark.com/pub/xml/xmltest.zip\n", file=sys.stderr)
+		print("!!!!! Can't locate file xmltest.zip\nPerhaps it should be downloaded from\nhttp://www.reportlab.com/ftp/xmltest.zip\nor\nftp://ftp.jclark.com/pub/xml/xmltest.zip\n", file=sys.stderr)
 		raise
+	else:
+		if verbose:
+			print(f'##### obtained {zipf!r} from {zipfName!r}') 
 
-	for zipname in zipf.namelist():
+	for zipname in sorted(zipf.namelist()):
 		#skip broken tests
 		#if sys.platform=='win32':
 		#	if zipname in ('xmltest/valid/ext-sa/014.xml',
@@ -139,9 +145,10 @@ def buildup_test(cls=test_pyRXPU,I=[]):
 		if not os.path.isdir(dir):
 			os.makedirs(dir)
 		if not os.path.isfile(osname):
-			f = open(osname,'wb')
-			f.write(zipf.read(zipname))
-			f.close()
+			print(f'##### creating {osname!r}...',end='...')
+			with open(osname,'wb') as f:
+				f.write(zipf.read(zipname))
+			print('written',flush=True)
 		if I and zipname not in I: continue
 
 		# Add input files to our lists
@@ -154,6 +161,11 @@ def buildup_test(cls=test_pyRXPU,I=[]):
 				outname = os.path.join(dir,'out',os.path.basename(osname))
 				cls.valid.append( (osname,outname) )
 
+	if verbose:
+		print(f'##### |{cls!r}.valid| = {len(cls.valid)}',flush=True)
+		print(f'##### |{cls!r}.invalid| = {len(cls.invalid)}',flush=True)
+		print(f'##### |{cls!r}.notwf| = {len(cls.notwf)}',flush=True)
+
 	# Add 'valid' tests
 	for inname,outname in cls.valid:
 		num = int(os.path.splitext(os.path.basename(inname))[0])
@@ -162,6 +174,7 @@ def buildup_test(cls=test_pyRXPU,I=[]):
 		def doTest(self,inname=inname,outname=outname):
 			self._test_valid(inname,outname)
 		setattr(cls,mname,doTest)
+	print('##### valid tests created')
 
 	# Add 'invalid' tests
 	for inname in cls.invalid:
@@ -174,6 +187,7 @@ def buildup_test(cls=test_pyRXPU,I=[]):
 		def doTest(self,inname=inname):
 			self._test_invalid_validate(inname)
 		setattr(cls,mname,doTest)
+	print('##### invalid tests created')
 
 	# Add 'not wellformed' tests
 	for inname in cls.notwf:
@@ -183,8 +197,10 @@ def buildup_test(cls=test_pyRXPU,I=[]):
 		def doTest(self,inname=inname):
 			self._test_notwf(inname)
 		setattr(cls,mname,doTest)
+	print('##### notwf tests created')
 
-def main():
+def main(verbose=0):
+	globals()['verbose'] = verbose
 	I = filter(lambda a: a[:2]=='-I',sys.argv)
 	for i in I: sys.argv.remove(i)
 	I = list(map(lambda x: x[2:],I))
