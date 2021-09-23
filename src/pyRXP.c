@@ -1231,17 +1231,6 @@ static PyTypeObject pyRXPParserType = {
 #	include <crtdbg.h>
 #endif
 
-int PyModule_AddBytesConstant(PyObject *m, const char *name, const char *value)
-{
-    PyObject *obj = PyBytes_FromString(value);
-    if (!obj) {
-        return -1;
-    }
-    int res = PyModule_AddObjectRef(m, name, obj);
-    Py_DECREF(obj);
-    return res;
-}
-
 static int module_exec(PyObject *m)
 {
 	PyObject *parser_flags, *t;
