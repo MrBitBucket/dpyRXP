@@ -35,8 +35,8 @@ if __name__=='__main__': #NO RUNTESTS
 	LIBRARIES=[]
 	EXT_MODULES = []
 	EXT_KWARGS = {}
-	DEFINE_MACROS=dict(CHAR_SIZE=16, MULTIPHASE_INIT=1)
-	for ev in ('DEBUG_INPUT','MULTIPHASE_INIT'):
+	DEFINE_MACROS=dict(CHAR_SIZE=16)
+	for ev in ('DEBUG_INPUT',):
 		evv = os.environ.get(ev,'')
 		try:
 			evv = int(evv)
