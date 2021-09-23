@@ -23,7 +23,7 @@ if debug: import time
 class test_pyRXPU(unittest.TestCase):
 
 	def parse(self,filename,**kw):
-		if debug: print('About to parse %s' % filename, file=sys.stderr)
+		if debug or verbose: print('##### About to parse %s' % filename, file=sys.stderr)
 		kw = kw.copy()
 		kw['ReturnComments'] = 0
 		kw['ExpandEmpty'] = 1
@@ -38,9 +38,14 @@ class test_pyRXPU(unittest.TestCase):
 		try:
 			with open(n,'rb') as f:
 				xml = f.read()
-			return parser.parse(xml)
-		finally:
+			r = parser.parse(xml)
 			del parser
+			parser = None
+			return r
+		finally:
+			if parser:
+				del parser
+				parser = None
 			os.chdir(retdir)
 			if debug: print('Done parsing   %s' % filename, file=sys.stderr)
 			if debug: print('='*60, file=sys.stderr)
