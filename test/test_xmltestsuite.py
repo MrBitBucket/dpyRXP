@@ -189,7 +189,7 @@ def main():
 	for i in I: sys.argv.remove(i)
 	I = list(map(lambda x: x[2:],I))
 	buildup_test(I=I)
-	unittest.main(module=__name__)
+	unittest.main(module=__name__,exit=False)
 
 if __name__ == '__main__':
 	main()

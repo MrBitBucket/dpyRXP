@@ -30,7 +30,7 @@ jobs:
     env:
       CIBW_SKIP: pp*
       #CIBW_BEFORE_BUILD_LINUX: yum install cairo-devel -y
-      #CIBW_BEFORE_TEST: pip install --no-cache-dir pyphen
+      CIBW_BEFORE_TEST: pip install --no-cache-dir psutil
       #CIBW_TEST_REQUIRES: "${{ matrix.os != 'macos-latest' && 'pyphen pycairo rlPyCairo' || 'pyphen' }}"
       #CIBW_TEST_SKIP: "*-macosx*"
       CIBW_TEST_COMMAND: python "{project}/test/runAll.py"
