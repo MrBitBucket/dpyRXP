@@ -151,10 +151,10 @@ def buildup_test(cls=test_pyRXPU,I=[]):
 		if not os.path.isdir(dir):
 			os.makedirs(dir)
 		if not os.path.isfile(osname):
-			print(f'##### creating {osname!r}...',end='...')
+			if verbose: print(f'##### creating {osname!r}...',end='...')
 			with open(osname,'wb') as f:
 				f.write(zipf.read(zipname))
-			print('written',flush=True)
+			if verbose: print('written',flush=True)
 		if I and zipname not in I: continue
 
 		# Add input files to our lists
@@ -180,7 +180,7 @@ def buildup_test(cls=test_pyRXPU,I=[]):
 		def doTest(self,inname=inname,outname=outname):
 			self._test_valid(inname,outname)
 		setattr(cls,mname,doTest)
-	print('##### valid tests created')
+	if verbose: print('##### valid tests created')
 
 	# Add 'invalid' tests
 	for inname in cls.invalid:
@@ -193,7 +193,7 @@ def buildup_test(cls=test_pyRXPU,I=[]):
 		def doTest(self,inname=inname):
 			self._test_invalid_validate(inname)
 		setattr(cls,mname,doTest)
-	print('##### invalid tests created')
+	if verbose: print('##### invalid tests created')
 
 	# Add 'not wellformed' tests
 	for inname in cls.notwf:
@@ -203,15 +203,28 @@ def buildup_test(cls=test_pyRXPU,I=[]):
 		def doTest(self,inname=inname):
 			self._test_notwf(inname)
 		setattr(cls,mname,doTest)
-	print('##### notwf tests created')
+	if verbose: print('##### notwf tests created')
 
-def main(verbose=0):
+def makeTests(verbose=0):
 	globals()['verbose'] = verbose
 	I = filter(lambda a: a[:2]=='-I',sys.argv)
 	for i in I: sys.argv.remove(i)
 	I = list(map(lambda x: x[2:],I))
 	buildup_test(I=I)
-	unittest.main(module=__name__,exit=False)
+
+def main(verbose=0, singles=0):
+	makeTests(verbose=verbose)
+	if singles:
+		T = sorted([t for t in test_pyRXPU.__dict__ if t.startswith("test_")])
+		for t in T:
+			print(f'+++++ test_xmltestsuite.test_pyRXPU.{t}',end='.....',flush=True)
+			r = os.system(' '.join((sys.executable, 'test_xmltestsuite.py', f'test_pyRXPU.{t}')))
+			if r:
+				print(f'FAIL !!!!! {t} exited with error {r} !!!!!')
+			else:
+				print(' OK')
+	else:
+		unittest.main(module=__name__,exit=False)
 
 if __name__ == '__main__':
 	main()
