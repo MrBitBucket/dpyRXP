@@ -61,7 +61,7 @@ def main():
 
     leaktest.main(100)
     testRXPbasic.main()
-    if platform.system()!='Darwin':
+    if 1 or platform.system()!='Darwin':
         verbose=int(os.environ.get('VERBOSE','0'))
         singles=int(os.environ.get('SINGLES','0'))
         test_xmltestsuite.main(verbose, singles)
