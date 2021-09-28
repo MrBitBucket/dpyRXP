@@ -46,8 +46,6 @@ typedef struct {
 	int				flags[2];
 	} pyRXPParser;
 
-#define _stringize(n) #n
-#define stringize(n) _stringize(n)
 #define MSTATE(m,n) _moduleGetAttr(m,stringize(n))
 #define PPSTATE(p,n) MSTATE(((pyRXPParser *)p)->__instance_module__,n)
 #define PDSTATE(pd,n) PPSTATE(((ParserDetails*)pd)->__self__,n)
@@ -83,7 +81,16 @@ PyObject *RLPy_FindMethod(PyMethodDef *ml, PyObject *self, const char* name){
 	}
 #define Py_FindMethod RLPy_FindMethod
 #define KEY2STR(key) PyUnicode_AsUTF8(key)
-#define RLPy_VISIT(o,n) if(o->n && Py_REFCNT(o->n)>0) Py_VISIT(o->n)
+#if	defined(DEBUG_PYRXP) && defined(WIN32)
+	include <crtdbg.h>
+#endif
+#if 0 && defined(DEBUG_PYRXP)
+#	define RLPy_VISIT(o,n) fprintf(stderr,"VISIT o->" stringize(n) "=%p |o->" stringize(n) "|=%d\n", o->n, o->n ? Py_REFCNT(o->n) : -1317);if(o->n && Py_REFCNT(o->n)>0) Py_VISIT(o->n)
+#	define RLPy_CLEAR(o,n) fprintf(stderr,"CLEAR o->" stringize(n) "=%p |o->" stringize(n) "|=%d\n", o->n, o->n ? Py_REFCNT(o->n) : -1317); Py_CLEAR(o->n)
+#else
+#	define RLPy_VISIT(o,n) if(o->n && Py_REFCNT(o->n)>0) Py_VISIT(o->n)
+#	define RLPy_CLEAR(o,n) Py_CLEAR(o->n)
+#endif
 
 #define MODULENAME "pyRXPU"
 #define UTF8DECL ,int utf8
@@ -377,9 +384,6 @@ static struct {char* k;long v;} flag_vals[]={
 #endif
 #define __GetFlag(p, flag) \
   ((((flag) < 32) ? ((p)->flags[0] & (1u << (flag))) : ((p)->flags[1] & (1u << ((flag)-32))))!=0)
-#ifdef	_DEBUG
-#	define Py_REFCOUNT(op) ((op)->ob_refcnt)
-#endif
 
 typedef	struct {
 		Parser		p;
@@ -971,6 +975,7 @@ static PyObject* pyRXPParser_parse(pyRXPParser* xself, PyObject* args, PyObject*
 	ParserDetails	CB;
 	Parser		p;
 	Entity		e;
+	Dtd			pdtd;
 	pyRXPParser	dummy = *xself;
 	pyRXPParser*	self = &dummy;
 	memset(&CB,0,sizeof(CB));
@@ -1059,9 +1064,10 @@ static PyObject* pyRXPParser_parse(pyRXPParser* xself, PyObject* args, PyObject*
 	source = SourceFromFILE16(PyBytes_AsString(self->srcName),f);
 	retVal = ProcessSource(p,source);
 	e = source->entity; /*used during FreeParser closing source!*/
+	pdtd = p->dtd;
 	Fclose(Stderr);
-	FreeDtd(p->dtd);
 	FreeParser(p);
+	FreeDtd(pdtd);
 	FreeEntity(e);
 	deinit_parser();
 L_1:
@@ -1124,11 +1130,11 @@ static int pyRXPParser_traverse(pyRXPParser *self, visitproc visit, void *arg){
 	return 0;
 	}
 static int pyRXPParser_clear(pyRXPParser* self){
-	Py_CLEAR(self->srcName);
-	Py_CLEAR(self->warnCB);
-	Py_CLEAR(self->eoCB);
-	Py_CLEAR(self->fourth);
-	Py_CLEAR(self->__instance_module__);
+	RLPy_CLEAR(self,srcName);
+	RLPy_CLEAR(self,warnCB);
+	RLPy_CLEAR(self,eoCB);
+	RLPy_CLEAR(self,fourth);
+	RLPy_CLEAR(self,__instance_module__);
 	return 0;
 	}
 
@@ -1168,7 +1174,7 @@ static int pyRXPParser_init(pyRXPParser* self, PyObject* args, PyObject* kw)
 	Py_INCREF(self->__instance_module__);
 	if(!(self->srcName=PyBytes_FromString("[unknown]"))){
 		PyErr_SetString(moduleError,"Internal error, memory limit reached!");
-Lfree:	pyRXPParser_dealloc(self);
+Lfree:	/*pyRXPParser_dealloc(self);*/
 		return -1;
 		}
 	for(i=0;flag_vals[i].k;i++)
@@ -1225,11 +1231,6 @@ static PyTypeObject pyRXPParserType = {
 	0,										/*tp_alloc*/
 	PyType_GenericNew,						/*tp_new*/
 	};
-
-
-#if	defined(_DEBUG) && defined(WIN32)
-#	include <crtdbg.h>
-#endif
 
 static int module_exec(PyObject *m)
 {
@@ -1292,7 +1293,7 @@ PyMODINIT_FUNC PyInit_pyRXPU(void)
 {
 	g_byteorder = InternalCharacterEncoding==CE_UTF_16B?1:-1;
 	g_encname = g_byteorder==1?"utf_16_be":"utf_16_le";
-#if	defined(_DEBUG) && defined(WIN32)
+#if	defined(DEBUG_PYRXP) && defined(WIN32)
 	int	i;
 	i = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
 	i |= _CRTDBG_CHECK_ALWAYS_DF;
